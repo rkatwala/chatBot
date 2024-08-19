@@ -13,15 +13,15 @@ def read_qa_evaluation(fileName):
 
 
 def generate_question(temp):
-    prompt = "Generate a unique question about basic data science. Each question should be different and cover various aspects of data science. Make sure it is not similar to one of these questions:"+ temp
-    print(prompt)
+    prompt = "Generate a unique question about basic data science. Each question should be different and cover various aspects of data science. Only give me the question and no other words. Make sure it is not similar to one of these questions:"+ temp
+    #print(prompt)
     response = openai.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt}
         ],
-        max_tokens=50
+        max_tokens=100
     )
     question = response.choices[0].message.content
     return question
@@ -34,7 +34,7 @@ def evaluate_answer(question, answer):
             {"role": "system", "content": "You are a teacher grading an exam"},
             {"role": "user", "content": prompt}
         ],
-        max_tokens=150
+        max_tokens=1000
     )
     evaluation = response.choices[0].message.content
     return evaluation
