@@ -1,8 +1,9 @@
 import openai
+from dotenv import load_dotenv
 
 # Replace 'your-api-key' with your actual OpenAI API key
-openai.api_key = ""
 
+load_dotenv()
 
 def read_qa_evaluation(fileName):
     try:
