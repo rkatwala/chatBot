@@ -7,8 +7,11 @@ from langchain.chains import RetrievalQAWithSourcesChain
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
 from langchain.memory import ConversationBufferMemory
+from dotenv import load_dotenv
 
-os.environ['OPENAI_API_KEY'] = ""
+# Replace 'your-api-key' with your actual OpenAI API key
+
+load_dotenv()
 
 # Initialize LLM and vectorstore
 llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.9, max_tokens=500)

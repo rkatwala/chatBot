@@ -10,13 +10,17 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_openai import ChatOpenAI
 
-os.environ['OPENAI_API_KEY'] = ""
+from dotenv import load_dotenv
+
+# Replace 'your-api-key' with your actual OpenAI API key
+
+load_dotenv()
 
 def word_wrap(text, width=80):
     import textwrap
     return "\n".join(textwrap.wrap(text, width))
 
-llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.9, max_tokens=500)
+llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0.9, max_tokens=500)
 
 #file_path = "faiss_store_openai.pkl"
 vectorstore_openai = None
