@@ -1,7 +1,7 @@
 import json
 import openai
 import os
-from dash import Dash, html, dcc, Input, Output, State
+from dash import Dash, html, dcc, Input, Output, State, MATCH
 from dash.exceptions import PreventUpdate
 from dotenv import load_dotenv
 
@@ -87,10 +87,50 @@ def save_to_jsonl(txt_file, jsonl_file):
         for record in qa_json:
             jsonl_out.write(json.dumps(record) + '\n')
 
+def load_chats(jsonl_file):
+    chats = []
+    if os.path.exists(jsonl_file):
+        with open(jsonl_file, 'r') as f:
+            for line in f:
+                chats.append(json.loads(line))
+    return chats
+
+def create_dropdowns(chats):
+    dropdowns = []
+    for i, chat in enumerate(chats):
+        dropdowns.append(
+            dcc.Dropdown(
+                id={'type': 'dynamic-dropdown', 'index': i},
+                options=[
+                    {'label': f"Answer: {chat['Answer']}\u00A0\u00A0", 'value': 'answer'},
+                    {'label': f"Evaluation: {chat['Score']}\u00A0\u00A0", 'value': 'score'},
+                    {'label': f"Reasoning: {chat['Reasoning']}\u00A0\u00A0", 'value': 'reasoning'},
+                    {'label': f" \u00A0", 'value': 'separator_3', 'disabled': True},  # Blank line
+                    {'label': f" \u00A0", 'value': 'separator_2', 'disabled': True},  # Blank line
+                    {'label': f"Right Answer: {chat['Right Answer']}\u00A0\u00A0", 'value': 'right_answer'},
+                    {'label': f" \u00A0", 'value': 'separator_5', 'disabled': True}
+                ],
+                placeholder=chat['Question'],
+                multi=False,
+                clearable=False,
+                value=None,  # Ensure the dropdown's value is reset
+                style={
+                    'marginTop': '20px',
+                    'width': '100%',
+                    'maxHeight': '400px',  # Set the max height of the dropdown menu
+                       # Enable scrolling if content exceeds max height
+                }
+            )
+        )
+    return dropdowns
+
+
 # Layout of the app
 app.layout = html.Div([
     html.H1("Data Science Chatbot"),
     dcc.Input(id='file-name', type='text', placeholder='Enter file name', style={'marginRight': '10px'}),
+    html.Br(),
+    html.Div(id='question-display', style={'marginTop': '20px'}),
     html.Br(),
     dcc.Textarea(id='answer', placeholder='Enter your answer here...', style={'width': '100%', 'height': 100}),
     html.Br(),
@@ -98,9 +138,9 @@ app.layout = html.Div([
     html.Button('New Question', id='new-question-button', n_clicks=0, style={'marginRight': '10px'}),
     html.Button('Start New Chat', id='new-chat-button', n_clicks=0),
     html.Br(),
-    html.Div(id='question-display', style={'marginTop': '20px'}),
     html.Div(id='evaluation-display', style={'marginTop': '20px'}),
-    html.Div(id='conversion-status', style={'marginTop': '20px'})
+    html.Div(id='conversion-status', style={'marginTop': '20px'}),
+    html.Div(id='previous-chats', style={'marginTop': '20px'})
 ])
 
 # Callback to handle user input and interaction
@@ -108,7 +148,8 @@ app.layout = html.Div([
     [Output('question-display', 'children'),
      Output('evaluation-display', 'children'),
      Output('conversion-status', 'children'),
-     Output('answer', 'value')],
+     Output('answer', 'value'),
+     Output('previous-chats', 'children')],
     [Input('submit-button', 'n_clicks'),
      Input('new-question-button', 'n_clicks'),
      Input('new-chat-button', 'n_clicks')],
@@ -131,10 +172,10 @@ def handle_interaction(submit_clicks, new_question_clicks, new_chat_clicks, file
     
     if new_question_clicks > submit_clicks:
         # If "New Question" button is clicked, clear the answer box
-        return f"Question: {question}", "", "", ""
+        return f"Question: {question}", "", "", "", []
 
     if not answer:
-        return f"Question: {question}", "", "", ""
+        return f"Question: {question}", "", "", "", []
 
     # Evaluate the answer
     evaluation = evaluate_answer(question, answer)
@@ -148,7 +189,20 @@ def handle_interaction(submit_clicks, new_question_clicks, new_chat_clicks, file
     
     conversion_status = f"Automatically converted {file_name} to {jsonl_file_name} successfully."
     
-    return f"Question: {question}", f"Evaluation: {evaluation}", conversion_status, ""
+    # Load previous chats from the jsonl file
+    chats = load_chats(jsonl_file_name)
+    dropdowns = create_dropdowns(chats)
+    
+    return f"Question: {question}", f"Evaluation: {evaluation}", conversion_status, "", dropdowns
+
+# Callback to reset dropdown value after selection
+@app.callback(
+    Output({'type': 'dynamic-dropdown', 'index': MATCH}, 'value'),
+    Input({'type': 'dynamic-dropdown', 'index': MATCH}, 'value'),
+)
+def reset_dropdown_value(selected_value):
+    # Reset the dropdown value to None to keep the placeholder unchanged
+    return None
 
 # Run the app
 if __name__ == '__main__':
